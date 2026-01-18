@@ -1,39 +1,33 @@
-import { createFileRoute } from '@tanstack/react-router'
-import logo from '../logo.svg'
+import { createFileRoute } from "@tanstack/react-router";
+import { useState } from "react";
+import PaintCanvas from "~/components/paint-canvas";
+import { IMAGE_SETS } from "~/lib/image-sets";
 
-export const Route = createFileRoute('/')({
+export const Route = createFileRoute("/")({
   component: App,
-})
+});
 
 function App() {
+  const [buildingId, setBuildingId] = useState(1);
+  const [color, setColor] = useState("#c9a26d");
   return (
-    <div className="text-center">
-      <header className="min-h-screen flex flex-col items-center justify-center bg-[#282c34] text-white text-[calc(10px+2vmin)]">
-        <img
-          src={logo}
-          className="h-[40vmin] pointer-events-none animate-[spin_20s_linear_infinite]"
-          alt="logo"
-        />
-        <p>
-          Edit <code>src/routes/index.tsx</code> and save to reload.
-        </p>
-        <a
-          className="text-[#61dafb] hover:underline"
-          href="https://reactjs.org"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          Learn React
-        </a>
-        <a
-          className="text-[#61dafb] hover:underline"
-          href="https://tanstack.com"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          Learn TanStack
-        </a>
-      </header>
+    <div style={{ padding: 20 }}>
+      <select
+        value={buildingId}
+        onChange={(e) => setBuildingId(Number(e.target.value))}
+      >
+        {IMAGE_SETS.map((set) => (
+          <option key={set.id} value={set.id}>
+            Building {set.id}
+          </option>
+        ))}
+      </select>
+      <input
+        type="color"
+        value={color}
+        onChange={(e) => setColor(e.target.value)}
+      />
+      <PaintCanvas buildingId={buildingId} color={color} />
     </div>
-  )
+  );
 }
