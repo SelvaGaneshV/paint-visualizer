@@ -1,5 +1,5 @@
 export interface BuildingImageSet {
-  id: number;
+  id: string;
   original: string;
   cleaned: string;
   normals: string;
