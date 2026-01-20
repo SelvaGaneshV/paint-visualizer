@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useState } from "react";
-import PaintCanvas from "~/components/paint-canvas";
+import { Canvas } from "~/components/canvas";
 import { IMAGE_SETS } from "~/lib/image-sets";
 
 export const Route = createFileRoute("/")({
@@ -27,7 +27,7 @@ function App() {
         value={color}
         onChange={(e) => setColor(e.target.value)}
       />
-      <PaintCanvas buildingId={buildingId} color={color} />
+      <Canvas id={buildingId} />
     </div>
   );
 }

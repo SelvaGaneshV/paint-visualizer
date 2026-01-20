@@ -1,49 +1,40 @@
 import { clsx, type ClassValue } from "clsx";
 import { twMerge } from "tailwind-merge";
-import type { BuildingImageSet, LoadedBuildingImages } from "./types";
 
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
 }
-export function loadImage(src: string): Promise<HTMLImageElement> {
-  return new Promise((resolve) => {
+export const loadImage = (src: string): Promise<HTMLImageElement> => {
+  return new Promise((res, rej) => {
+    console.log(src);
     const img = new Image();
     img.src = src;
-    img.onload = () => resolve(img);
+    img.onload = () => res(img);
+    img.onerror = (e) => rej(e);
   });
-}
+};
 
-export function createCanvas(w: number, h: number) {
+export const getImageDataFromImage = (img: HTMLImageElement, width: number, height: number) => {
   const c = document.createElement("canvas");
-  c.width = w;
-  c.height = h;
-  return c;
-}
+  c.width = width;
+  c.height = height;
 
-export async function loadBuildingSet(
-  set: BuildingImageSet,
-): Promise<LoadedBuildingImages> {
-  const [original, cleaned, normals, edge] = await Promise.all([
-    loadImage(set.original),
-    loadImage(set.cleaned),
-    loadImage(set.normals),
-    loadImage(set.edge),
-  ]);
+  const ctx = c.getContext("2d", {
+    willReadFrequently: true,
+  })!;
+  ctx.drawImage(img, 0, 0);
+  return ctx.getImageData(0, 0, c.width, c.height);
+};
 
-  return { original, cleaned, normals, edge };
-}
+export const isDark = (r: number, g: number, b: number, threshold: number = 128) => {
+  const luminance = 0.299 * r + 0.587 * g + 0.114 * b;
+  return luminance < threshold;
+};
 
-export function getCanvasCoordinates(
-  e: React.MouseEvent<HTMLCanvasElement>,
-  canvas: HTMLCanvasElement,
-) {
-  const rect = canvas.getBoundingClientRect();
-
-  const scaleX = canvas.width / rect.width;
-  const scaleY = canvas.height / rect.height;
-
-  return {
-    x: Math.floor((e.clientX - rect.left) * scaleX),
-    y: Math.floor((e.clientY - rect.top) * scaleY),
-  };
-}
+export const hexToRgb = (hex: string) => {
+  hex = hex.replace("#", "");
+  const r = parseInt(hex.substring(0, 2), 16);
+  const g = parseInt(hex.substring(2, 4), 16);
+  const b = parseInt(hex.substring(4, 6), 16);
+  return [r, g, b];
+};

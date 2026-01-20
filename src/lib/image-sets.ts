@@ -44,12 +44,3 @@ export const IMAGE_SETS: BuildingImageSet[] = [
     edge: "/assignment_testing_images/6/edge.png",
   },
 ];
-
-export const PAINT_COLORS = [
-  { name: "Sunset Red", value: "#D84315" },
-  { name: "Ocean Blue", value: "#1976D2" },
-  { name: "Forest Green", value: "#388E3C" },
-  { name: "Golden Yellow", value: "#F9A825" },
-  { name: "Royal Purple", value: "#7B1FA2" },
-  { name: "Warm Beige", value: "#D7CCC8" },
-];
