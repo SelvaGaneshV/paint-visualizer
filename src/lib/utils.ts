@@ -14,6 +14,20 @@ export const loadImage = (src: string): Promise<HTMLImageElement> => {
   });
 };
 
+export const loadFileAsImage = (file: File): Promise<HTMLImageElement> => {
+  return new Promise((res, rej) => {
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const img = new Image();
+      img.onload = () => res(img);
+      img.onerror = (e) => rej(e);
+      img.src = e.target?.result as string;
+    };
+    reader.onerror = (e) => rej(e);
+    reader.readAsDataURL(file);
+  });
+};
+
 export const getImageDataFromImage = (img: HTMLImageElement, width: number, height: number) => {
   const c = document.createElement("canvas");
   c.width = width;

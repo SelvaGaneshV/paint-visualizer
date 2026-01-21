@@ -6,6 +6,13 @@ export interface BuildingImageSet {
   edge: string;
 }
 
+export interface UploadedImages {
+  cleaned: File | null;
+  edge: File | null;
+  normals: File | null;
+  original: File | null;
+}
+
 export interface LoadedBuildingImages {
   original: HTMLImageElement;
   cleaned: HTMLImageElement;

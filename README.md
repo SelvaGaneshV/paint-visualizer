@@ -1,299 +1,214 @@
-Welcome to your new TanStack app! 
+# ColorCraft Paint Visualizer
 
-# Getting Started
+A web application for visualizing paint colors on building regions. Upload your own images or select from preset buildings to paint specific regions with realistic colors while preserving textures.
 
-To run this application:
+## Features
+
+- **Dual Input Modes**: Upload your own images or select from preset buildings
+- **File & URL Support**: Upload image files directly or load from URLs
+- **Region Selection**: Click to select regions with visual highlighting (blue outline)
+- **Two Modes**:
+  - **Select Mode**: Click regions to highlight them without painting
+  - **Paint Mode**: Click regions to apply paint color while preserving texture
+- **Paint All**: Apply the selected color to all regions at once
+- **Preset Buildings**: Choose from sample buildings for quick testing
+- **Realistic Rendering**: Paint colors blend with original textures using intensity maps
+
+## Getting Started
+
+### Prerequisites
+
+- Node.js 18+
+- npm, yarn, or pnpm
+
+### Installation
 
 ```bash
+# Using npm
+npm install
+
+# Using pnpm
 pnpm install
-pnpm start
+
+# Using yarn
+yarn install
 ```
 
-# Building For Production
+### Development
 
-To build this application for production:
+```bash
+# Using npm
+npm run dev
+
+# Using pnpm
+pnpm dev
+
+# Using yarn
+yarn dev
+```
+
+The app will be available at `http://localhost:3000`
+
+### Building
+
+```bash
+# Using npm
+npm run build
+
+# Using pnpm
+pnpm build
+
+# Using yarn
+yarn build
+```
+
+## Image Requirements
+
+The application requires three images to work:
+
+| Image | Required | Description |
+|-------|----------|-------------|
+| **Cleaned Image** | Yes | The base image to display and paint on |
+| **Edge Detection Image** | Yes | Black and white image showing region boundaries |
+| **Normal Map Image** | Yes | RGB image representing surface normals for lighting |
+| **Original Image** | No | Optional reference image |
+
+### Image Specifications
+
+- All images must have the same dimensions
+- Recommended size: 512x512 to 2048x2048
+- Formats: PNG, JPEG, WebP
+- Edge image: Regions should be uniform color with clear boundaries
+- Normal map: Standard RGB normal map format
+
+## Adding Preset Images
+
+To add your own preset buildings, follow these steps:
+
+### 1. Add Image Files
+
+Place your image files in the `public/assignment_testing_images/{building-id}/` directory:
+
+```
+public/
+└── assignment_testing_images/
+    └── {building-id}/
+        ├── original.png    # Optional
+        ├── cleaned.png     # Required
+        ├── edge.png        # Required
+        └── normals.png     # Required
+```
+
+Example for building 7:
+```
+public/
+└── assignment_testing_images/
+    └── 7/
+        ├── original.png
+        ├── cleaned.png
+        ├── edge.png
+        └── normals.png
+```
+
+### 2. Update Image Sets
+
+Edit `src/lib/image-sets.ts` to add your building to the preset list:
+
+```typescript
+export const IMAGE_SETS: BuildingImageSet[] = [
+  // ... existing presets ...
+  {
+    id: "7",
+    original: "/assignment_testing_images/7/original.png",
+    cleaned: "/assignment_testing_images/7/cleaned.png",
+    normals: "/assignment_testing_images/7/normals.png",
+    edge: "/assignment_testing_images/7/edge.png",
+  },
+];
+```
+
+### 3. Rebuild the Application
+
+If running in production mode, rebuild the application:
 
 ```bash
 pnpm build
 ```
 
-## Testing
+Your preset will now appear in the Preset dropdown alongside the default buildings.
 
-This project uses [Vitest](https://vitest.dev/) for testing. You can run the tests with:
+### Image Preparation Tips
 
-```bash
-pnpm test
+- **Cleaned Image**: Should be a clear, well-lit image of the building facade
+- **Edge Detection**: Use edge detection software (like Sobel, Canny, or Photoshop) on the cleaned image
+  - Regions should be clearly separated with distinct boundaries
+  - Background should be a solid color different from building regions
+- **Normal Map**: Can be generated from depth information or manually created
+  - Blue represents flat surfaces (128, 128, 255)
+  - Red/green represent angled surfaces
+- **Consistency**: Ensure all four images have exactly the same dimensions and pixel alignment
+
+## Usage
+
+### Using Preset Buildings
+
+1. Click "Preset" button in the Image Source card
+2. Select a building from the dropdown
+3. The images will load automatically
+
+### Uploading Custom Images
+
+1. Click "Upload" button in the Image Source card
+2. For each required image, either:
+   - Click the file input to select an image file
+   - Paste an image URL and click the link icon
+3. Ensure all required images (cleaned, edge, normals) are loaded
+
+### Painting Regions
+
+1. Select a color using the color picker or quick colors
+2. Choose "Select Mode" to preview regions (blue outline highlights)
+3. Choose "Paint Mode" to apply paint
+4. Click on regions to select/paint them
+5. Hold Shift + click in Paint Mode to paint multiple regions
+6. Use "Paint All" button to paint all regions at once
+7. Use "Reload Image" to reset to original state
+
+## Project Structure
+
+```
+paint-visualizer/
+├── src/
+│   ├── components/
+│   │   └── canvas.tsx      # Main canvas component with painting logic
+│   ├── lib/
+│   │   ├── image-sets.ts   # Preset building definitions
+│   │   ├── mask-generator.ts # Region mask generation
+│   │   ├── types.d.ts      # TypeScript type definitions
+│   │   └── utils.ts        # Utility functions
+│   ├── routes/
+│   │   └── index.tsx       # Main application page
+│   └── styles.css          # Global styles
+├── dist/                   # Production build output
+├── package.json
+└── vite.config.ts
 ```
 
-## Styling
+## How It Works
+
+1. **Region Detection**: Uses edge detection image to identify and label distinct regions
+2. **Intensity Mapping**: Normal map is processed to create an intensity map for realistic lighting
+3. **Texture Preservation**: When painting, the selected color is blended with the original texture pixels
+4. **Region Selection**: Click coordinates are mapped to region labels for selection
+5. **Highlighting**: Selected regions are outlined in blue using edge pixel detection
+
+## Tech Stack
+
+- React 19
+- TanStack Router
+- TypeScript
+- Vite
+- Tailwind CSS
+- Radix UI Components
+- Lucide Icons
 
-This project uses [Tailwind CSS](https://tailwindcss.com/) for styling.
-
-
-
-## Shadcn
-
-Add components using the latest version of [Shadcn](https://ui.shadcn.com/).
-
-```bash
-pnpm dlx shadcn@latest add button
-```
-
-
-
-## Routing
-This project uses [TanStack Router](https://tanstack.com/router). The initial setup is a file based router. Which means that the routes are managed as files in `src/routes`.
-
-### Adding A Route
-
-To add a new route to your application just add another a new file in the `./src/routes` directory.
-
-TanStack will automatically generate the content of the route file for you.
-
-Now that you have two routes you can use a `Link` component to navigate between them.
-
-### Adding Links
-
-To use SPA (Single Page Application) navigation you will need to import the `Link` component from `@tanstack/react-router`.
-
-```tsx
-import { Link } from "@tanstack/react-router";
-```
-
-Then anywhere in your JSX you can use it like so:
-
-```tsx
-<Link to="/about">About</Link>
-```
-
-This will create a link that will navigate to the `/about` route.
-
-More information on the `Link` component can be found in the [Link documentation](https://tanstack.com/router/v1/docs/framework/react/api/router/linkComponent).
-
-### Using A Layout
-
-In the File Based Routing setup the layout is located in `src/routes/__root.tsx`. Anything you add to the root route will appear in all the routes. The route content will appear in the JSX where you use the `<Outlet />` component.
-
-Here is an example layout that includes a header:
-
-```tsx
-import { Outlet, createRootRoute } from '@tanstack/react-router'
-import { TanStackRouterDevtools } from '@tanstack/react-router-devtools'
-
-import { Link } from "@tanstack/react-router";
-
-export const Route = createRootRoute({
-  component: () => (
-    <>
-      <header>
-        <nav>
-          <Link to="/">Home</Link>
-          <Link to="/about">About</Link>
-        </nav>
-      </header>
-      <Outlet />
-      <TanStackRouterDevtools />
-    </>
-  ),
-})
-```
-
-The `<TanStackRouterDevtools />` component is not required so you can remove it if you don't want it in your layout.
-
-More information on layouts can be found in the [Layouts documentation](https://tanstack.com/router/latest/docs/framework/react/guide/routing-concepts#layouts).
-
-
-## Data Fetching
-
-There are multiple ways to fetch data in your application. You can use TanStack Query to fetch data from a server. But you can also use the `loader` functionality built into TanStack Router to load the data for a route before it's rendered.
-
-For example:
-
-```tsx
-const peopleRoute = createRoute({
-  getParentRoute: () => rootRoute,
-  path: "/people",
-  loader: async () => {
-    const response = await fetch("https://swapi.dev/api/people");
-    return response.json() as Promise<{
-      results: {
-        name: string;
-      }[];
-    }>;
-  },
-  component: () => {
-    const data = peopleRoute.useLoaderData();
-    return (
-      <ul>
-        {data.results.map((person) => (
-          <li key={person.name}>{person.name}</li>
-        ))}
-      </ul>
-    );
-  },
-});
-```
-
-Loaders simplify your data fetching logic dramatically. Check out more information in the [Loader documentation](https://tanstack.com/router/latest/docs/framework/react/guide/data-loading#loader-parameters).
-
-### React-Query
-
-React-Query is an excellent addition or alternative to route loading and integrating it into you application is a breeze.
-
-First add your dependencies:
-
-```bash
-pnpm add @tanstack/react-query @tanstack/react-query-devtools
-```
-
-Next we'll need to create a query client and provider. We recommend putting those in `main.tsx`.
-
-```tsx
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-
-// ...
-
-const queryClient = new QueryClient();
-
-// ...
-
-if (!rootElement.innerHTML) {
-  const root = ReactDOM.createRoot(rootElement);
-
-  root.render(
-    <QueryClientProvider client={queryClient}>
-      <RouterProvider router={router} />
-    </QueryClientProvider>
-  );
-}
-```
-
-You can also add TanStack Query Devtools to the root route (optional).
-
-```tsx
-import { ReactQueryDevtools } from "@tanstack/react-query-devtools";
-
-const rootRoute = createRootRoute({
-  component: () => (
-    <>
-      <Outlet />
-      <ReactQueryDevtools buttonPosition="top-right" />
-      <TanStackRouterDevtools />
-    </>
-  ),
-});
-```
-
-Now you can use `useQuery` to fetch your data.
-
-```tsx
-import { useQuery } from "@tanstack/react-query";
-
-import "./App.css";
-
-function App() {
-  const { data } = useQuery({
-    queryKey: ["people"],
-    queryFn: () =>
-      fetch("https://swapi.dev/api/people")
-        .then((res) => res.json())
-        .then((data) => data.results as { name: string }[]),
-    initialData: [],
-  });
-
-  return (
-    <div>
-      <ul>
-        {data.map((person) => (
-          <li key={person.name}>{person.name}</li>
-        ))}
-      </ul>
-    </div>
-  );
-}
-
-export default App;
-```
-
-You can find out everything you need to know on how to use React-Query in the [React-Query documentation](https://tanstack.com/query/latest/docs/framework/react/overview).
-
-## State Management
-
-Another common requirement for React applications is state management. There are many options for state management in React. TanStack Store provides a great starting point for your project.
-
-First you need to add TanStack Store as a dependency:
-
-```bash
-pnpm add @tanstack/store
-```
-
-Now let's create a simple counter in the `src/App.tsx` file as a demonstration.
-
-```tsx
-import { useStore } from "@tanstack/react-store";
-import { Store } from "@tanstack/store";
-import "./App.css";
-
-const countStore = new Store(0);
-
-function App() {
-  const count = useStore(countStore);
-  return (
-    <div>
-      <button onClick={() => countStore.setState((n) => n + 1)}>
-        Increment - {count}
-      </button>
-    </div>
-  );
-}
-
-export default App;
-```
-
-One of the many nice features of TanStack Store is the ability to derive state from other state. That derived state will update when the base state updates.
-
-Let's check this out by doubling the count using derived state.
-
-```tsx
-import { useStore } from "@tanstack/react-store";
-import { Store, Derived } from "@tanstack/store";
-import "./App.css";
-
-const countStore = new Store(0);
-
-const doubledStore = new Derived({
-  fn: () => countStore.state * 2,
-  deps: [countStore],
-});
-doubledStore.mount();
-
-function App() {
-  const count = useStore(countStore);
-  const doubledCount = useStore(doubledStore);
-
-  return (
-    <div>
-      <button onClick={() => countStore.setState((n) => n + 1)}>
-        Increment - {count}
-      </button>
-      <div>Doubled - {doubledCount}</div>
-    </div>
-  );
-}
-
-export default App;
-```
-
-We use the `Derived` class to create a new store that is derived from another store. The `Derived` class has a `mount` method that will start the derived store updating.
-
-Once we've created the derived store we can use it in the `App` component just like we would any other store using the `useStore` hook.
-
-You can find out everything you need to know on how to use TanStack Store in the [TanStack Store documentation](https://tanstack.com/store/latest).
-
-# Demo files
-
-Files prefixed with `demo` can be safely deleted. They are there to provide a starting point for you to play around with the features you've installed.
-
-# Learn More
-
-You can learn more about all of the offerings from TanStack in the [TanStack documentation](https://tanstack.com).

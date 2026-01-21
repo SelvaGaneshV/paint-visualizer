@@ -1,31 +1,40 @@
 import React from "react";
-import { IMAGE_SETS } from "~/lib/image-sets";
-import { buildIntensityMap, createMasks } from "~/lib/mask-generator";
-import { getImageDataFromImage, hexToRgb, loadImage } from "~/lib/utils";
 import { Card, CardContent } from "~/components/ui/card";
-import { Loader2 } from "lucide-react";
+import { buildIntensityMap, createMasks } from "~/lib/mask-generator";
+import type { UploadedImages } from "~/lib/types";
+import { getImageDataFromImage, hexToRgb, loadFileAsImage } from "~/lib/utils";
 
 interface CanvasProps {
-  id: string;
+  uploadedImages: UploadedImages;
   selectedColor: string;
 }
 
-export const Canvas: React.FC<CanvasProps> = ({ id, selectedColor }) => {
+export const Canvas: React.FC<CanvasProps> = ({ uploadedImages, selectedColor }) => {
   const [regions, setRegions] = React.useState<{
     labels: Int32Array<ArrayBuffer>;
     regionCount: number;
   } | null>();
   const [regionPixels, setRegionPixels] = React.useState<number[][] | null>(null);
   const [intensity, setIntensity] = React.useState<Float32Array<ArrayBuffer> | null>(null);
-  const [isLoading, setIsLoading] = React.useState(true);
   const [selectedRegion, setSelectedRegion] = React.useState<number | null>(null);
+  const [mode, setMode] = React.useState<"select" | "paint">("select");
+  const [readyToLoad, setReadyToLoad] = React.useState(false);
+  const [textureImageData, setTextureImageData] = React.useState<ImageData | null>(null);
   const canvasRef = React.useRef<HTMLCanvasElement | null>(null);
+  const highlightRef = React.useRef<HTMLCanvasElement | null>(null);
+
+  const allImagesLoaded = uploadedImages.cleaned && uploadedImages.edge && uploadedImages.normals;
 
   React.useEffect(() => {
-    loadNeedImage();
-  }, [id]);
+    if (allImagesLoaded) {
+      setReadyToLoad(true);
+      loadNeedImage();
+    } else {
+      setReadyToLoad(false);
+    }
+  }, [uploadedImages]);
 
-  const handlePaintAll = React.useEffectEvent((e: CustomEvent) => {
+  const handlePaintAll = React.useEffectEvent(() => {
     paintAllRegion(hexToRgb(selectedColor));
   });
   const handleReload = React.useEffectEvent(() => {
@@ -45,7 +54,7 @@ export const Canvas: React.FC<CanvasProps> = ({ id, selectedColor }) => {
   }, [regionPixels, intensity]);
 
   function paintRegion(regionId: number, baseColor = [210, 180, 140]) {
-    if (regionId < 0 || !regionPixels || !intensity) return;
+    if (regionId < 0 || !regionPixels || !intensity || !textureImageData) return;
     const [br, bg, bb] = baseColor;
     const canvas = canvasRef.current!;
     const ctx = canvas.getContext("2d", {
@@ -59,9 +68,14 @@ export const Canvas: React.FC<CanvasProps> = ({ id, selectedColor }) => {
       const o = i * 4;
       const k = intensity[i];
       if (k === -1) continue;
-      img.data[o] = Math.min(255, br * k);
-      img.data[o + 1] = Math.min(255, bg * k);
-      img.data[o + 2] = Math.min(255, bb * k);
+
+      const tr = textureImageData.data[o];
+      const tg = textureImageData.data[o + 1];
+      const tb = textureImageData.data[o + 2];
+
+      img.data[o] = Math.min(255, (tr * br) / 255);
+      img.data[o + 1] = Math.min(255, (tg * bg) / 255);
+      img.data[o + 2] = Math.min(255, (tb * bb) / 255);
       img.data[o + 3] = 255;
     }
 
@@ -69,7 +83,7 @@ export const Canvas: React.FC<CanvasProps> = ({ id, selectedColor }) => {
   }
 
   function paintAllRegion(baseColor: number[] = [210, 180, 140]) {
-    if (!regionPixels || !intensity) return;
+    if (!regionPixels || !intensity || !textureImageData) return;
     const canvas = canvasRef.current!;
     const ctx = canvas.getContext("2d", {
       willReadFrequently: true,
@@ -82,9 +96,14 @@ export const Canvas: React.FC<CanvasProps> = ({ id, selectedColor }) => {
         const o = i * 4;
         const k = intensity[i];
         if (k === -1) continue;
-        img.data[o] = Math.min(255, br * k);
-        img.data[o + 1] = Math.min(255, bg * k);
-        img.data[o + 2] = Math.min(255, bb * k);
+
+        const tr = textureImageData.data[o];
+        const tg = textureImageData.data[o + 1];
+        const tb = textureImageData.data[o + 2];
+
+        img.data[o] = Math.min(255, (tr * br) / 255);
+        img.data[o + 1] = Math.min(255, (tg * bg) / 255);
+        img.data[o + 2] = Math.min(255, (tb * bb) / 255);
         img.data[o + 3] = 255;
       }
     }
@@ -92,14 +111,56 @@ export const Canvas: React.FC<CanvasProps> = ({ id, selectedColor }) => {
     ctx.putImageData(img, 0, 0);
   }
 
+  function highlightRegion(regionId: number | null) {
+    const highlightCanvas = highlightRef.current;
+    const mainCanvas = canvasRef.current;
+    if (!highlightCanvas || !mainCanvas || !regionPixels || !regions) return;
+
+    highlightCanvas.width = mainCanvas.width;
+    highlightCanvas.height = mainCanvas.height;
+
+    const ctx = highlightCanvas.getContext("2d")!;
+    ctx.clearRect(0, 0, highlightCanvas.width, highlightCanvas.height);
+
+    if (regionId === null || regionId < 0) return;
+
+    const pixels = regionPixels[regionId];
+    const pixelSet = new Set(pixels);
+
+    ctx.strokeStyle = "#3b82f6";
+    ctx.lineWidth = 2;
+
+    for (const i of pixels) {
+      const x = i % mainCanvas.width;
+      const y = Math.floor(i / mainCanvas.width);
+      const isEdge =
+        !pixelSet.has(i - 1) ||
+        !pixelSet.has(i + 1) ||
+        !pixelSet.has(i - mainCanvas.width) ||
+        !pixelSet.has(i + mainCanvas.width);
+
+      if (isEdge) {
+        ctx.beginPath();
+        ctx.arc(x, y, 1, 0, Math.PI * 2);
+        ctx.fill();
+      }
+    }
+  }
+
+  React.useEffect(() => {
+    highlightRegion(selectedRegion);
+  }, [selectedRegion, regionPixels]);
+
   const loadNeedImage = async () => {
-    setIsLoading(true);
+    if (!uploadedImages.cleaned || !uploadedImages.edge || !uploadedImages.normals) {
+      return;
+    }
+
     try {
-      const imageSet = IMAGE_SETS.find((set) => set.id === id)!;
       const loadedImage = await Promise.all([
-        loadImage(imageSet.cleaned),
-        loadImage(imageSet.edge),
-        loadImage(imageSet.normals),
+        loadFileAsImage(uploadedImages.cleaned),
+        loadFileAsImage(uploadedImages.edge),
+        loadFileAsImage(uploadedImages.normals),
       ]);
 
       const [cleaned, edge, normals] = loadedImage;
@@ -115,6 +176,9 @@ export const Canvas: React.FC<CanvasProps> = ({ id, selectedColor }) => {
       ctx.imageSmoothingEnabled = true;
       ctx.drawImage(cleaned, 0, 0, cleaned.width, cleaned.height);
 
+      const textureData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+      setTextureImageData(textureData);
+
       const { regionPixels, labels, regionCount } = createMasks(
         edge,
         cleaned.width,
@@ -128,8 +192,6 @@ export const Canvas: React.FC<CanvasProps> = ({ id, selectedColor }) => {
       setRegions({ labels, regionCount });
     } catch (error) {
       console.error(error);
-    } finally {
-      setIsLoading(false);
     }
   };
 
@@ -150,25 +212,60 @@ export const Canvas: React.FC<CanvasProps> = ({ id, selectedColor }) => {
     <Card className="overflow-hidden">
       <CardContent className="p-0">
         <div className="relative flex min-h-100 items-center justify-center bg-muted/20">
-          <canvas
-            id={id + "-canvas"}
-            ref={canvasRef}
-            className="h-auto max-w-full cursor-crosshair touch-none"
-            onClick={(e) => {
-              if (!selectedColor) return;
-              const regionId = getRegionFromClick(e);
-              setSelectedRegion(regionId);
-              paintRegion(regionId, hexToRgb(selectedColor));
-            }}
-            onMouseMove={(e) => {
-              if (e.shiftKey && selectedColor) {
-                const regionId = getRegionFromClick(e);
-                paintRegion(regionId, hexToRgb(selectedColor));
-              }
-            }}
-          />
+          {!readyToLoad ? (
+            <div className="text-muted-foreground">Please upload all required images</div>
+          ) : (
+            <div className="relative">
+              <canvas
+                id="uploaded-canvas"
+                ref={canvasRef}
+                className="h-auto max-w-full cursor-crosshair touch-none"
+                onClick={(e) => {
+                  const regionId = getRegionFromClick(e);
+                  if (mode === "select") {
+                    setSelectedRegion(regionId);
+                  } else if (mode === "paint" && selectedColor) {
+                    setSelectedRegion(regionId);
+                    paintRegion(regionId, hexToRgb(selectedColor));
+                  }
+                }}
+                onMouseMove={(e) => {
+                  if (mode === "paint" && e.shiftKey && selectedColor) {
+                    const regionId = getRegionFromClick(e);
+                    paintRegion(regionId, hexToRgb(selectedColor));
+                  }
+                }}
+              />
+              <canvas
+                ref={highlightRef}
+                className="pointer-events-none absolute top-0 left-0 h-full w-full"
+              />
+            </div>
+          )}
 
-          <div className="absolute right-4 bottom-4 left-4 flex justify-center">
+          <div className="absolute right-4 bottom-4 left-4 flex flex-col items-center gap-2">
+            <div className="flex gap-2">
+              <button
+                onClick={() => setMode("select")}
+                className={`rounded px-4 py-2 text-sm font-medium transition-colors ${
+                  mode === "select"
+                    ? "bg-primary text-primary-foreground"
+                    : "bg-background text-foreground hover:bg-muted"
+                }`}
+              >
+                Select Mode
+              </button>
+              <button
+                onClick={() => setMode("paint")}
+                className={`rounded px-4 py-2 text-sm font-medium transition-colors ${
+                  mode === "paint"
+                    ? "bg-primary text-primary-foreground"
+                    : "bg-background text-foreground hover:bg-muted"
+                }`}
+              >
+                Paint Mode
+              </button>
+            </div>
             <div className="flex gap-6 rounded-lg border border-border bg-background/95 px-4 py-2 text-sm shadow-lg backdrop-blur">
               <div className="flex items-center gap-2">
                 <span className="text-muted-foreground">Regions:</span>
