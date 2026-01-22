@@ -132,10 +132,10 @@ function App() {
     if (!preset) return;
 
     Promise.all([
-      fetch(preset.cleaned).then((r) => r.blob()),
-      fetch(preset.edge).then((r) => r.blob()),
-      fetch(preset.normals).then((r) => r.blob()),
-      fetch(preset.original).then((r) => r.blob()),
+      fetch(`${import.meta.env.VITE_VERCEL_BLOB}${preset.cleaned}`).then((r) => r.blob()),
+      fetch(`${import.meta.env.VITE_VERCEL_BLOB}${preset.edge}`).then((r) => r.blob()),
+      fetch(`${import.meta.env.VITE_VERCEL_BLOB}${preset.normals}`).then((r) => r.blob()),
+      fetch(`${import.meta.env.VITE_VERCEL_BLOB}${preset.original}`).then((r) => r.blob()),
     ])
       .then(([cleanedBlob, edgeBlob, normalsBlob, originalBlob]) => {
         setUploadedImages({
