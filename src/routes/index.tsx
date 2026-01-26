@@ -1,12 +1,11 @@
 import { createFileRoute } from "@tanstack/react-router";
-import React, { useRef } from "react";
+import { Image as ImageIcon, Link2, PaintBucket, Palette, RefreshCw } from "lucide-react";
+import React from "react";
 import { Canvas } from "~/components/canvas";
-import { IMAGE_SETS } from "~/lib/image-sets";
-import type { UploadedImages } from "~/lib/types";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "~/components/ui/card";
 import { Button } from "~/components/ui/button";
-import { Label } from "~/components/ui/label";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "~/components/ui/card";
 import { Input } from "~/components/ui/input";
+import { Label } from "~/components/ui/label";
 import {
   Select,
   SelectContent,
@@ -14,7 +13,9 @@ import {
   SelectTrigger,
   SelectValue,
 } from "~/components/ui/select";
-import { PaintBucket, RefreshCw, Palette, Image as ImageIcon, Link2 } from "lucide-react";
+import { IMAGE_SETS } from "~/lib/image-sets";
+import type { UploadedImages } from "~/lib/types";
+import { cn } from "~/lib/utils";
 
 export const Route = createFileRoute("/")({
   component: App,
@@ -49,10 +50,10 @@ function App() {
     original: "",
   });
 
-  const cleanedInputRef = useRef<HTMLInputElement>(null);
-  const edgeInputRef = useRef<HTMLInputElement>(null);
-  const normalsInputRef = useRef<HTMLInputElement>(null);
-  const originalInputRef = useRef<HTMLInputElement>(null);
+  const cleanedInputRef = React.useRef<HTMLInputElement>(null);
+  const edgeInputRef = React.useRef<HTMLInputElement>(null);
+  const normalsInputRef = React.useRef<HTMLInputElement>(null);
+  const originalInputRef = React.useRef<HTMLInputElement>(null);
 
   const inputRefs = {
     cleaned: cleanedInputRef,
@@ -194,26 +195,24 @@ function App() {
               </CardHeader>
               <CardContent className="space-y-2">
                 <div className="flex gap-2">
-                  <button
+                  <Button
                     onClick={() => handleModeChange("upload")}
-                    className={`flex-1 rounded-md px-4 py-2 text-sm font-medium transition-colors ${
-                      inputMode === "upload"
-                        ? "bg-primary text-primary-foreground"
-                        : "bg-muted hover:bg-muted/80"
-                    }`}
+                    className={cn(
+                      "flex-1 rounded-md px-4 py-2 text-sm font-medium transition-colors",
+                      inputMode !== "upload" && "bg-muted hover:bg-muted/80 text-muted-foreground",
+                    )}
                   >
                     Upload
-                  </button>
-                  <button
+                  </Button>
+                  <Button
                     onClick={() => handleModeChange("preset")}
-                    className={`flex-1 rounded-md px-4 py-2 text-sm font-medium transition-colors ${
-                      inputMode === "preset"
-                        ? "bg-primary text-primary-foreground"
-                        : "bg-muted hover:bg-muted/80"
-                    }`}
+                    className={cn(
+                      "flex-1 rounded-md px-4 py-2 text-sm font-medium transition-colors",
+                      inputMode !== "preset" && "bg-muted hover:bg-muted/80 text-muted-foreground",
+                    )}
                   >
                     Preset
-                  </button>
+                  </Button>
                 </div>
               </CardContent>
             </Card>

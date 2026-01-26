@@ -165,7 +165,7 @@ export const Canvas: React.FC<CanvasProps> = ({ uploadedImages, selectedColor })
 
       const [cleaned, edge, normals] = loadedImage;
       const canvas = canvasRef.current!;
-      console.log(canvas, cleaned.width, cleaned.height);
+
       canvas.width = cleaned.width;
       canvas.height = cleaned.height;
 
